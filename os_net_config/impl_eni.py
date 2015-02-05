@@ -1,6 +1,6 @@
 # -*- Coding: utf-8 -*-
 
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2014-2015 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 
 
 # TODO(?): should move to interfaces.d
-def _network_config_path():
-    return "/etc/network/interfaces"
+def _network_config_path(prefix=''):
+    return prefix + "/etc/network/interfaces"
 
 
 class ENINetConfig(os_net_config.NetConfig):
@@ -39,10 +39,11 @@ class ENINetConfig(os_net_config.NetConfig):
        /etc/network/interfaces format.
     """
 
-    def __init__(self):
+    def __init__(self, rootdir=''):
         self.interfaces = {}
         self.routes = {}
         self.bridges = {}
+        self.rootdir = rootdir
         logger.info('ENI net config provider created.')
 
     def _add_common(self, interface, static_addr=None):
@@ -207,9 +208,9 @@ class ENINetConfig(os_net_config.NetConfig):
             iface_data += (route_data or '')
             new_config += iface_data
 
-        if (utils.diff(_network_config_path(), new_config)):
+        if (utils.diff(_network_config_path(self.rootdir), new_config)):
             if noop:
-                return {"/etc/network/interfaces": new_config}
+                return {self.rootdir + "/etc/network/interfaces": new_config}
             for interface in self.interfaces.keys():
                 logger.info('running ifdown on interface: %s' % interface)
                 processutils.execute('/sbin/ifdown', interface,
@@ -221,7 +222,7 @@ class ENINetConfig(os_net_config.NetConfig):
                                      check_exit_code=False)
 
             logger.info('writing config file')
-            utils.write_config(_network_config_path(), new_config)
+            utils.write_config(_network_config_path(self.rootdir), new_config)
 
             for bridge in self.bridges.keys():
                 logger.info('running ifup on bridge: %s' % bridge)

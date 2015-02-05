@@ -207,7 +207,7 @@ class TestENINetConfigApply(base.TestCase):
         super(TestENINetConfigApply, self).setUp()
         self.temp_config_file = tempfile.NamedTemporaryFile()
 
-        def test_config_path():
+        def test_config_path(prefix):
             return self.temp_config_file.name
         self.stubs.Set(impl_eni, '_network_config_path', test_config_path)
 

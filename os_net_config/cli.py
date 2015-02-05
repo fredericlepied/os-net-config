@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014 Red Hat, Inc.
+# Copyright 2014-2015 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -42,6 +42,9 @@ def parse_opts(argv):
                         help="""The provider to use."""
                         """One of: ifcfg, eni, iproute.""",
                         default=None)
+    parser.add_argument('-r', '--rootdir', metavar='ROOT_DIR',
+                        help="""The root directory of the filesystem.""",
+                        default='')
     parser.add_argument(
         '-d', '--debug',
         dest="debug",
@@ -99,19 +102,19 @@ def main(argv=sys.argv):
     provider = None
     if opts.provider:
         if opts.provider == 'ifcfg':
-            provider = impl_ifcfg.IfcfgNetConfig()
+            provider = impl_ifcfg.IfcfgNetConfig(opts.rootdir)
         elif opts.provider == 'eni':
-            provider = impl_eni.ENINetConfig()
+            provider = impl_eni.ENINetConfig(opts.rootdir)
         elif opts.provider == 'iproute':
-            provider = impl_iproute.IPRouteNetConfig()
+            provider = impl_iproute.IPRouteNetConfig(opts.rootdir)
         else:
             logger.error('Invalid provider specified.')
             return 1
     else:
-        if os.path.exists('/etc/sysconfig/network-scripts/'):
-            provider = impl_ifcfg.IfcfgNetConfig()
-        elif os.path.exists('/etc/network/'):
-            provider = impl_eni.ENINetConfig()
+        if os.path.exists('%s/etc/sysconfig/network-scripts/' % opts.rootdir):
+            provider = impl_ifcfg.IfcfgNetConfig(opts.rootdir)
+        elif os.path.exists('%s/etc/network/' % opts.rootdir):
+            provider = impl_eni.ENINetConfig(opts.rootdir)
         else:
             logger.error('Unable to set provider for this operating system.')
             return 1
